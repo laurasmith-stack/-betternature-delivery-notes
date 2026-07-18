@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Better Nature - Delivery Note Tool</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -78,8 +79,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="container">
   <div class="card">
     <div class="card-header"><span class="step">1</span><span class="card-title">Upload customer order PDF</span></div>
-    <div class="drop-zone" id="drop-zone" ondragover="event.preventDefault();this.classList.add(&#39;over&#39;)" ondragleave="this.classList.remove(&#39;over&#39;)" ondrop="onDrop(event)">
-      <div class="dz-icon">📄</div>
+    <div class="drop-zone" id="drop-zone"
+      ondragover="event.preventDefault();this.classList.add('over')"
+      ondragleave="this.classList.remove('over')"
+      ondrop="onDrop(event)">
+      <div class="dz-icon">&#128196;</div>
       <div class="dz-title">Drag and drop order PDF here</div>
       <div class="dz-sub">GB Fine-Food GmbH Lieferschein</div>
       <div class="dz-or">- or -</div>
@@ -101,7 +105,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="field"><label>Expiry date</label><input id="in-expiry" type="date"></div>
       <div class="field full"><label>Note / variant (optional)</label><input id="in-note" placeholder="e.g. Smoky, Natur, Curry mix"></div>
     </div>
-    <button class="btn btn-primary" id="save-btn" onclick="saveBatch()">✓ Save batch</button>
+    <button class="btn btn-primary" id="save-btn" onclick="saveBatch()">&#10003; Save batch</button>
     <div id="msg-save"></div>
     <div id="batch-list" style="margin-top:14px"><p class="empty">No batches saved yet.</p></div>
   </div>
@@ -111,27 +115,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <label>Select batch</label>
       <select id="in-batch"><option value="">- choose a saved batch -</option></select>
     </div>
-    <button class="btn btn-primary btn-full" id="gen-btn" onclick="generatePDF()">↓ Generate &amp; download delivery note PDF</button>
+    <button class="btn btn-primary btn-full" id="gen-btn" onclick="generatePDF()">&#8595; Generate &amp; download delivery note PDF</button>
     <div id="msg-gen"></div>
   </div>
 </div>
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
 var batches = [];
 var order = null;
-
 document.getElementById('file-input').addEventListener('change', function() {
   if (this.files && this.files[0]) processFile(this.files[0]);
 });
-
 function onDrop(e) {
   e.preventDefault();
   document.getElementById('drop-zone').classList.remove('over');
   var f = e.dataTransfer.files[0];
   if (f) processFile(f);
 }
-
 function processFile(file) {
   if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
     showMsg('msg-upload', 'Please select a PDF file.', 'err');
@@ -144,7 +144,6 @@ function processFile(file) {
   reader.onerror = function() { showMsg('msg-upload', 'Could not read file.', 'err'); };
   reader.readAsArrayBuffer(file);
 }
-
 function extractPDF(data) {
   pdfjsLib.getDocument({ data: data }).promise.then(function(pdf) {
     var allText = '';
@@ -163,7 +162,6 @@ function extractPDF(data) {
     chain.then(function() { parseOrderText(allText); });
   }).catch(function(e) { showMsg('msg-upload', 'Could not open PDF: ' + e.message, 'err'); });
 }
-
 function parseOrderText(text) {
   var orderNo = '', deliveryDate = '', deliveryAddress = '';
   var m = text.match(/Bestell-Nr[^0-9]*([0-9]{7,12})/i);
@@ -173,7 +171,7 @@ function parseOrderText(text) {
     var mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     deliveryDate = parseInt(m[1]) + '-' + mo[parseInt(m[2]) - 1] + '-' + m[3];
   }
-  m = text.match(/((?:Aldi|Rewe|Lidl|Edeka|Netto|Penny|Kaufland|Norma)[^ ]*?[0-9]{5}\s+[A-Za-z][A-Za-z\s\(\)\-]*)/i);
+  m = text.match(/((?:Aldi|Rewe|Lidl|Edeka|Netto|Penny|Kaufland|Norma)[^\x00]*?[0-9]{5}\s+[A-Za-z][A-Za-z\s\(\)\-]*)/i);
   if (m) deliveryAddress = m[1].replace(/\s+/g, ' ').trim().substring(0, 200);
   if (!orderNo && !deliveryDate) {
     showMsg('msg-upload', 'Could not extract details. Is this a GB Fine-Food Lieferschein PDF?', 'err');
@@ -188,25 +186,20 @@ function parseOrderText(text) {
   document.getElementById('drop-zone').classList.add('loaded');
   showMsg('msg-upload', 'Order loaded. Select a batch and generate.', 'ok');
 }
-
 function fmtDate(s) {
   if (!s) return '';
   var d = new Date(s + 'T00:00:00');
   var mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return d.getDate() + '-' + mo[d.getMonth()] + '-' + d.getFullYear();
 }
-
 function daysUntil(s) { return !s ? 9999 : (new Date(s + 'T00:00:00') - Date.now()) / 86400000; }
-
 function persist() {
   try { localStorage.setItem('bn_batches_v4', JSON.stringify(batches)); } catch(e) {}
 }
-
 function loadStored() {
   try { var v = localStorage.getItem('bn_batches_v4'); if (v) batches = JSON.parse(v); } catch(e) {}
   render();
 }
-
 function render() {
   var list = document.getElementById('batch-list');
   var sel = document.getElementById('in-batch');
@@ -224,14 +217,12 @@ function render() {
     sel.appendChild(o);
   });
 }
-
 function showMsg(id, text, type) {
   var el = document.getElementById(id);
   el.className = 'msg msg-' + type;
   el.textContent = text;
   if (type === 'ok') setTimeout(function() { el.textContent = ''; el.className = ''; }, 4000);
 }
-
 function saveBatch() {
   var lot = document.getElementById('in-lot').value.trim();
   var expiry = document.getElementById('in-expiry').value;
@@ -245,9 +236,7 @@ function saveBatch() {
   showMsg('msg-save', 'Lot ' + lot + ' saved.', 'ok');
   render();
 }
-
 function delBatch(i) { batches.splice(i, 1); persist(); render(); }
-
 function generatePDF() {
   if (!order) { showMsg('msg-gen', 'Upload a customer order PDF first.', 'err'); return; }
   var idx = document.getElementById('in-batch').value;
@@ -269,12 +258,9 @@ function generatePDF() {
     }
   }, 100);
 }
-
 function buildPDF(order, batch) {
   var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
   var W = 210, H = 297;
-
-  // Logo box - teal rectangle with BETTER NATURE text
   doc.setFillColor(26, 122, 120);
   doc.roundedRect(14, 5, 30, 18, 2, 2, 'F');
   doc.setTextColor(255, 255, 255);
@@ -282,8 +268,6 @@ function buildPDF(order, batch) {
   doc.setFontSize(8);
   doc.text('BETTER', 18, 12);
   doc.text('NATURE', 18, 19);
-
-  // Address box - dotted border
   doc.setDrawColor(150, 180, 200);
   doc.setLineWidth(0.3);
   doc.setFillColor(255, 255, 255);
@@ -294,12 +278,10 @@ function buildPDF(order, batch) {
   doc.text('Better Nature Deutschland GmbH', 49, 10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80, 80, 80);
-  doc.text('Max-Eyth-Straße 46, Ellwangen, 73479, Deutschland', 49, 14);
+  doc.text('Max-Eyth-Strasse 46, Ellwangen, 73479, Deutschland', 49, 14);
   doc.setTextColor(26, 122, 120);
   doc.text('Email hello@betternaturetempeh.co', 49, 18);
   doc.text('www.betternaturetempeh.co', 49, 21.5);
-
-  // Company info top right
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
   doc.setTextColor(26, 122, 120);
@@ -307,48 +289,35 @@ function buildPDF(order, batch) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6);
   doc.setTextColor(30, 30, 30);
-  ['Max-Eyth-Straße 46,  73479 Ellwangen Jagst', 'Deutschland',
+  ['Max-Eyth-Strasse 46, 73479 Ellwangen Jagst', 'Deutschland',
    'EORI Number: DE760703666419790', 'VAT Number: NL828028606B01',
    'German Business Number: HRB 744913', 'GLN: 4262414240007',
    'sales@betternaturetempeh.co', '+447838300248', 'Page: 1 / 1'
   ].forEach(function(l, i) { doc.text(l, W - 14, 14 + i * 3.2, { align: 'right' }); });
-
-  // Separator
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.3);
   doc.line(14, 28, W - 14, 28);
-
-  // Title
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
   doc.setTextColor(26, 122, 120);
   doc.text('Delivery Note', 14, 38);
-
-  // Info block border
   doc.setDrawColor(210, 210, 210);
   doc.setLineWidth(0.25);
   doc.rect(13, 41, W - 26, 48, 'S');
-
   function row(label, value, y) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(100, 100, 100);
     doc.text(label, 15, y);
     doc.setTextColor(20, 20, 20);
-    value.split('
-').forEach(function(l, i) { doc.text(l, 60, y + i * 4.2); });
+    value.split('\n').forEach(function(l, i) { doc.text(l, 60, y + i * 4.2); });
   }
-
-  var addr = (order.deliveryAddress || '-').replace(/,\s+/g, '
-');
+  var addr = (order.deliveryAddress || '-').replace(/,\s+/g, '\n');
   row('Delivery address:', addr, 48);
-  row('Billing address:', 'GB Fine-Food GmbH, Bahnhofstraße 13a, 25557 Hanerau-
-Hademarschen', 66);
+  row('Billing address:', 'GB Fine-Food GmbH, Bahnhofstrasse 13a, 25557 Hanerau-\nHademarschen', 66);
   row('Order No:', order.orderNo || '-', 77);
   row('Delivery Note No:', (order.orderNo || '') + '_1', 82.5);
   row('Delivery Date', order.deliveryDate || '-', 88);
-
-  // Table
   doc.setDrawColor(20, 20, 20);
   doc.setLineWidth(0.5);
   doc.line(14, 96, W - 14, 96);
@@ -366,7 +335,6 @@ Hademarschen', 66);
   doc.text('Date', 176, hY + 4);
   doc.setLineWidth(0.35);
   doc.line(14, hY + 6, W - 14, hY + 6);
-
   var pY = hY + 13;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
@@ -375,7 +343,6 @@ Hademarschen', 66);
   doc.text('120', 140, pY);
   doc.text(batch.lot, 157, pY);
   doc.text(fmtDate(batch.expiry), 176, pY);
-
   var tY = pY + 11;
   doc.setDrawColor(180, 180, 180);
   doc.setLineWidth(0.25);
@@ -386,11 +353,9 @@ Hademarschen', 66);
   doc.text('Total', 14, tY);
   doc.text('120', 140, tY);
   doc.line(14, tY + 4, W - 14, tY + 4);
-
   doc.setFontSize(7);
   doc.setTextColor(80, 80, 80);
   doc.text('Note: Product SBR010010 "Better Nature Bio Tempeh 10x200G" is classified as BIO (NL-BIO-01). Please consider this if present in the delivery note.', 14, tY + 13);
-
   doc.setFontSize(8);
   doc.text('Despatch Operator', 14, H - 38);
   doc.text('Truck Temp Set Point', 14, H - 32);
@@ -400,11 +365,9 @@ Hademarschen', 66);
   doc.line(14, H - 21, W - 14, H - 21);
   doc.setFontSize(7.5);
   doc.text('[1] ' + (batch.note || 'Smoky'), 14, H - 16);
-
   doc.save('Delivery_Note_' + order.orderNo + '.pdf');
 }
-
 loadStored();
 </script>
-
-</body></html>
+</body>
+</html>
