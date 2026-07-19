@@ -256,11 +256,12 @@ function buildPDF(order,batch) {
   var ax = 14+logoW+2;
   var aw = 62;
   var ah = hMm;
-  // Fill blue then white inner
-  doc.setFillColor(70,130,200);
-  doc.rect(ax,imgY,aw,ah,'F');
+  // Slim single blue border line
   doc.setFillColor(255,255,255);
-  doc.rect(ax+2,imgY+2,aw-4,ah-4,'F');
+  doc.rect(ax,imgY,aw,ah,'F');
+  doc.setDrawColor(70,130,200);
+  doc.setLineWidth(0.4);
+  doc.rect(ax,imgY,aw,ah,'S');
   // Text
   doc.setFont('helvetica','bold');
   doc.setFontSize(6.5);
@@ -282,24 +283,21 @@ function buildPDF(order,batch) {
   ].forEach(function(l,i){doc.text(l,W-14,13+i*3.2,{align:'right'});});
   doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(26,122,120);
   doc.text('Delivery Note',14,38);
-  doc.setDrawColor(210,210,210); doc.setLineWidth(0.25); doc.rect(13,41,W-26,48,'S');
+  doc.setDrawColor(210,210,210); doc.setLineWidth(0.25); doc.rect(13,41,W-26,52,'S');
   function row(label,values,y){
     doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(100,100,100);
     doc.text(label,15,y); doc.setTextColor(20,20,20);
     values.forEach(function(v,i){doc.text(v,60,y+i*4.2);});
   }
-  var addr=(order.deliveryAddress||'-').replace(/DEUTSCHLAND/gi,'').replace(/,\s*/g,', ').trim();
-  var addrMid=Math.floor(addr.length/2);
-  var addrBreak=addr.indexOf(' ',addrMid);
-  var addrL1=addr.substring(0,addrBreak).trim();
-  var addrL2=addr.substring(addrBreak).trim();
-  row('Delivery address:',[addrL1,addrL2],48);
-  row('Billing address:',['GB Fine-Food GmbH, Bahnhofstrasse 13a, 25557 Hanerau-','Hademarschen'],59);
-  row('Order No:',[order.orderNo||'-'],70);
-  row('Delivery Note No:',[(order.orderNo||'')+'_1'],75);
-  row('Delivery Date',[order.deliveryDate||'-'],80);
-  doc.setDrawColor(20,20,20); doc.setLineWidth(0.5); doc.line(14,93,W-14,93);
-  var hY=100;
+  var addr=(order.deliveryAddress||'-').replace(/DEUTSCHLAND/gi,'').replace(/GLN[:\s]*[0-9]+/gi,'').replace(/,\s+/g,'\n').replace(/\s{2,}/g,' ').trim();
+  var addrLines=addr.split('\n').filter(function(l){return l.trim().length>0;}).slice(0,4);
+  row('Delivery address:',addrLines,48);
+  row('Billing address:',['GB Fine-Food GmbH, Bahnhofstrasse 13a, 25557 Hanerau-','Hademarschen'],67);
+  row('Order No:',[order.orderNo||'-'],78);
+  row('Delivery Note No:',[(order.orderNo||'')+'_1'],83);
+  row('Delivery Date',[order.deliveryDate||'-'],88);
+  doc.setDrawColor(20,20,20); doc.setLineWidth(0.5); doc.line(14,97,W-14,97);
+  var hY=104;
   doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(20,20,20);
   doc.text('SKU #',14,hY); doc.text('Item - TEMPEH',35,hY); doc.text('PRODUCTS',35,hY+4);
   doc.text('Case',140,hY); doc.text('Qty.',140,hY+4);
