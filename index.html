@@ -312,7 +312,9 @@ function buildPDF(order,batch) {
   var pcMatch = addr.match(/^(.*?)\s*([0-9]{5}\s*.+)$/);
   var addrRows;
   if (pcMatch) {
-    addrRows = [pcMatch[1].trim(), pcMatch[2].trim()];
+    var l1 = pcMatch[1].trim();
+    var l2 = pcMatch[2].trim().replace(/^([0-9]{5}\s*)Gro\s*$/i, '$1Grossbeeren').replace(/\s*Gro\s*$/, ' Grossbeeren');
+    addrRows = [l1, l2];
   } else {
     addrRows = [addr];
   }
