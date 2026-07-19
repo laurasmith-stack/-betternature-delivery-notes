@@ -296,7 +296,7 @@ function buildPDF(order,batch) {
   var addrLine2=addrParts.slice(1).join(', ').trim();
   var addrRows=addrLine2.length>0?[addrLine1,addrLine2]:[addrLine1];
   row('Delivery address:',addrRows,48);
-  row('Billing address:',['GB Fine-Food GmbH, Bahnhofstrasse 13a, 25557 Hanerau-','Hademarschen'],58);
+  row('Billing address:',['GB Fine-Food GmbH, Bahnhofstrasse 13a,','25557 Hanerau-Hademarschen'],58);
   row('Order No:',[order.orderNo||'-'],69);
   row('Delivery Note No:',[(order.orderNo||'')+'_1'],74);
   row('Delivery Date',[order.deliveryDate||'-'],79);
