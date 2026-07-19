@@ -306,10 +306,14 @@ function buildPDF(order,batch) {
   }
   var addr=(order.deliveryAddress||'-').replace(/DEUTSCHLAND/gi,'').replace(/GLN[:\s]*[0-9]+/gi,'').replace(/\s*\([^)]*\)/g,'').replace(/\s+/g,' ').trim();
   // Split address into max 3 lines at commas
-  var addrParts=addr.split(',').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
-  var addrLine1=addrParts[0]||'';
-  var addrLine2=addrParts.slice(1).join(', ').trim();
-  var addrRows=addrLine2.length>0?[addrLine1,addrLine2]:[addrLine1];
+  // Split address at postcode (5 digits) so name/street on line 1, postcode+town on line 2
+  var pcMatch = addr.match(/^(.*?)\s*([0-9]{5}\s*.+)$/);
+  var addrRows;
+  if (pcMatch) {
+    addrRows = [pcMatch[1].trim(), pcMatch[2].trim()];
+  } else {
+    addrRows = [addr];
+  }
   row('Delivery address:',addrRows,48);
   row('Billing address:',['GB Fine-Food GmbH, Bahnhofstrasse 13a, 25557','Hanerau-Hademarschen'],58);
   row('Order No:',[order.orderNo||'-'],69);
