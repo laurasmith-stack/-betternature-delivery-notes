@@ -174,7 +174,7 @@ function parseOrderText(text) {
     deliveryDate = parseInt(m[1]) + '-' + mo[parseInt(m[2]) - 1] + '-' + m[3];
   }
   m = text.match(/((?:Aldi|Rewe|Lidl|Edeka|Netto|Penny|Kaufland|Norma)[^\x00]*?[0-9]{5}\s+[A-Za-z][A-Za-z\s\(\)\-]*)/i);
-  if (m) deliveryAddress = m[1].replace(/DEUTSCHLAND/gi,'').replace(/\s+/g,' ').trim().substring(0,200);
+  if (m) deliveryAddress = m[1].replace(/DEUTSCHLAND/gi,'').replace(/GLN[^\s]*/gi,'').replace(/\s+/g,' ').trim().substring(0,200);
   if (!orderNo && !deliveryDate) { showMsg('msg-upload','Could not extract details. Is this a GB Fine-Food Lieferschein PDF?','err'); return; }
   order = { orderNo: orderNo, deliveryDate: deliveryDate, deliveryAddress: deliveryAddress };
   document.getElementById('p-order').textContent = orderNo || '-';
@@ -253,29 +253,29 @@ function buildPDF(order,batch) {
   var imgY=2;
   doc.addImage(LOGO_SRC,'PNG',14,imgY,logoW,hMm);
   // Draw address box as crisp vector
-  var ax = 14+logoW+3;
-  var aw = 80;
+  var ax = 14+logoW+2;
+  var aw = 68;
   var ah = hMm;
   // Outer blue border
   doc.setDrawColor(70,130,200);
   doc.setLineWidth(0.8);
   doc.setFillColor(255,255,255);
   doc.rect(ax,imgY,aw,ah,'FD');
-  // Inner dotted border effect
+  // Inner border
   doc.setDrawColor(100,160,220);
   doc.setLineWidth(0.3);
-  doc.rect(ax+1.5,imgY+1.5,aw-3,ah-3,'S');
+  doc.rect(ax+1,imgY+1,aw-2,ah-2,'S');
   // Text
   doc.setFont('helvetica','bold');
-  doc.setFontSize(7);
+  doc.setFontSize(6.5);
   doc.setTextColor(60,100,180);
-  doc.text('Better Nature Deutschland GmbH',ax+aw/2,imgY+5.5,{align:'center'});
+  doc.text('Better Nature Deutschland GmbH',ax+aw/2,imgY+4.5,{align:'center'});
   doc.setFont('helvetica','normal');
-  doc.setFontSize(6);
-  doc.text('Max-Eyth-Strasse 46, Ellwangen, 73479, Deutschland',ax+aw/2,imgY+9,{align:'center'});
+  doc.setFontSize(5.5);
+  doc.text('Max-Eyth-Strasse 46, Ellwangen, 73479, Deutschland',ax+aw/2,imgY+8,{align:'center'});
   doc.setTextColor(60,100,180);
-  doc.text('Email:hello@betternaturetempeh.co',ax+aw/2,imgY+14.5,{align:'center'});
-  doc.text('www.betternaturetempeh.co',ax+aw/2,imgY+18.5,{align:'center'});
+  doc.text('Email:hello@betternaturetempeh.co',ax+aw/2,imgY+13,{align:'center'});
+  doc.text('www.betternaturetempeh.co',ax+aw/2,imgY+16.5,{align:'center'});
   doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(26,122,120);
   doc.text('Better Nature Deutschland GmbH',W-14,8,{align:'right'});
   doc.setFont('helvetica','normal'); doc.setFontSize(6); doc.setTextColor(30,30,30);
@@ -312,7 +312,7 @@ function buildPDF(order,batch) {
   var pY=hY+13;
   doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
   doc.text('1034860',14,pY);
-  doc.text('Bio Tempeh, 200g',35,pY);
+  doc.text('Bio Tempeh, 200g sortert x12',35,pY);
   doc.text('120',140,pY); doc.text(batch.lot,157,pY); doc.text(fmtDate(batch.expiry),176,pY);
   var tY=pY+11;
   doc.setDrawColor(180,180,180); doc.setLineWidth(0.25); doc.line(14,tY-3,W-14,tY-3);
@@ -324,7 +324,7 @@ function buildPDF(order,batch) {
   doc.text('Despatch Operator',14,H-38); doc.text('Truck Temp Set Point',14,H-32);
   doc.text('Condition of the Truck',14,H-26);
   doc.setDrawColor(180,180,180); doc.setLineWidth(0.3); doc.line(14,H-21,W-14,H-21);
-  doc.setFontSize(7.5); doc.text(batch.note||'Smoky',14,H-16);
+  // footnote removed
   doc.save('Delivery_Note_'+order.orderNo+'.pdf');
 }
 loadStored();
