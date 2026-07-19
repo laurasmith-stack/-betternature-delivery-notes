@@ -254,8 +254,8 @@ function buildPDF(order,batch) {
   doc.addImage(LOGO_SRC,'PNG',14,imgY,logoW,hMm);
   // Draw address box as crisp vector
   var ax = 14+logoW+2;
-  var aw = 62;
-  var ah = hMm;
+  var aw = 52;
+  var ah = hMm-4;
   // Slim single blue border line
   doc.setFillColor(255,255,255);
   doc.rect(ax,imgY,aw,ah,'F');
@@ -296,7 +296,7 @@ function buildPDF(order,batch) {
   var addrLine2=addrParts.slice(1).join(', ').trim();
   var addrRows=addrLine2.length>0?[addrLine1,addrLine2]:[addrLine1];
   row('Delivery address:',addrRows,48);
-  row('Billing address:',['GB Fine-Food GmbH, Bahnhofstrasse 13a,','25557 Hanerau-Hademarschen'],58);
+  row('Billing address:',['GB Fine-Food GmbH, Bahnhofstrasse 13a, 25557','Hanerau-Hademarschen'],58);
   row('Order No:',[order.orderNo||'-'],69);
   row('Delivery Note No:',[(order.orderNo||'')+'_1'],74);
   row('Delivery Date',[order.deliveryDate||'-'],79);
