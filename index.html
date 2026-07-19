@@ -307,7 +307,8 @@ function buildPDF(order,batch) {
   var addr=(order.deliveryAddress||'-').replace(/DEUTSCHLAND/gi,'').replace(/GLN[:\s]*[0-9]+/gi,'').replace(/\s*\([^)]*\)/g,'').replace(/\s+/g,' ').trim();
   // Split address into max 3 lines at commas
   // Also fix ß in final addr string
-  addr = addr.replace(/([A-Za-z]) (\u00df[a-z]+)/g, '$1ss$2');
+  addr = addr.split('').map(function(c){ return c.charCodeAt(0)===223?'ss':c; }).join('');
+  addr = addr.replace(/([a-zA-Z]) ss([a-z])/g, '$1ss$2');
   var pcMatch = addr.match(/^(.*?)\s*([0-9]{5}\s*.+)$/);
   var addrRows;
   if (pcMatch) {
