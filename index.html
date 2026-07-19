@@ -289,7 +289,7 @@ function buildPDF(order,batch) {
     doc.text(label,15,y); doc.setTextColor(20,20,20);
     values.forEach(function(v,i){doc.text(v,60,y+i*4.2);});
   }
-  var addr=(order.deliveryAddress||'-').replace(/DEUTSCHLAND/gi,'').replace(/GLN[:\s]*[0-9]+/gi,'').replace(/\s+/g,' ').trim();
+  var addr=(order.deliveryAddress||'-').replace(/DEUTSCHLAND/gi,'').replace(/GLN[:\s]*[0-9]+/gi,'').replace(/\s*\([^)]*\)/g,'').replace(/\s+/g,' ').trim();
   // Split address into max 3 lines at commas
   var addrParts=addr.split(',').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
   var addrLine1=addrParts[0]||'';
