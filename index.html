@@ -306,7 +306,8 @@ function buildPDF(order,batch) {
   }
   var addr=(order.deliveryAddress||'-').replace(/DEUTSCHLAND/gi,'').replace(/GLN[:\s]*[0-9]+/gi,'').replace(/\s*\([^)]*\)/g,'').replace(/\s+/g,' ').trim();
   // Split address into max 3 lines at commas
-  // Split address at postcode (5 digits) so name/street on line 1, postcode+town on line 2
+  // Also fix ß in final addr string
+  addr = addr.replace(/([A-Za-z]) (\u00df[a-z]+)/g, '$1ss$2');
   var pcMatch = addr.match(/^(.*?)\s*([0-9]{5}\s*.+)$/);
   var addrRows;
   if (pcMatch) {
