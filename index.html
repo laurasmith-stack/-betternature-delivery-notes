@@ -309,11 +309,14 @@ function buildPDF(order,batch) {
   // Also fix ß in final addr string
   addr = addr.split('').map(function(c){ return c.charCodeAt(0)===223?'ss':c; }).join('');
   addr = addr.replace(/([a-zA-Z]) ss([a-z])/g, '$1ss$2');
-  var pcMatch = addr.match(/^(.*?)\s*([0-9]{5}\s*.+)$/);
+  var pcMatch = addr.match(/^(.*?)\s*([0-9]{5}[\s\S]+)$/);
   var addrRows;
   if (pcMatch) {
     var l1 = pcMatch[1].trim();
-    var l2 = pcMatch[2].trim().replace(/^([0-9]{5}\s*)Gro\s*$/i, '$1Großbeeren').replace(/\s*Gro\s*$/, ' Großbeeren');
+    var l2 = pcMatch[2].trim();
+    // Fix truncated town names
+    if (/Gro\s*$/.test(l2)) l2 = l2.replace(/Gro\s*$/, 'Großbeeren');
+    if (/Hann\s*$/.test(l2)) l2 = l2.replace(/Hann\s*$/, 'Hann. Munden');
     addrRows = [l1, l2];
   } else {
     addrRows = [addr];
