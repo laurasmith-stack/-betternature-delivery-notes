@@ -247,14 +247,12 @@ function generatePDF() {
 function buildPDF(order,batch) {
   var doc = new window.jspdf.jsPDF({unit:'mm',format:'a4'});
   var W=210, H=297;
-  var logoImg=new Image(); logoImg.src=LOGO_SRC;
-  var addrImg=new Image(); addrImg.src=ADDR_SRC;
   var hMm=22;
   var logoW=hMm*(201/132);
   var addrW=hMm*(338/102);
-  var imgY=H-2-hMm;
-  doc.addImage(logoImg,'PNG',14,imgY,logoW,hMm);
-  doc.addImage(addrImg,'PNG',14+logoW+3,imgY,addrW,hMm);
+  var imgY=2;
+  doc.addImage(LOGO_SRC,'PNG',14,imgY,logoW,hMm);
+  doc.addImage(ADDR_SRC,'PNG',14+logoW+3,imgY,addrW,hMm);
   doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(26,122,120);
   doc.text('Better Nature Deutschland GmbH',W-14,8,{align:'right'});
   doc.setFont('helvetica','normal'); doc.setFontSize(6); doc.setTextColor(30,30,30);
