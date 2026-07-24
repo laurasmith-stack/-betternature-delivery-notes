@@ -130,7 +130,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <select id="in-batch"><option value="">- choose a saved batch -</option></select>
     </div>
     <button class="btn btn-primary btn-full" id="gen-btn" onclick="generatePDF()">&#8595; Generate &amp; download delivery note PDF</button>
-    <button class="btn btn-full" id="email-btn" onclick="emailTobias()" style="margin-top:8px;background:#ea4335;color:white;border-color:#ea4335;height:48px;font-size:15px">&#9993; Open Gmail to send to Tobias</button>
     <div id="msg-gen"></div>
   </div>
 </div>
@@ -181,18 +180,53 @@ function extractPDF(data) {
   }).catch(function(e) { showMsg('msg-upload', 'Could not open PDF: ' + e.message, 'err'); });
 }
 function parseOrderText(text) {
-  var orderNo = '', deliveryDate = '', deliveryAddress = '';
+  var orderNo = '', deliveryDate = '', deliveryAddress = '', skuNo = '', caseQty = '', productName = '';
+
+  // Order number
   var m = text.match(/Bestell-Nr[^0-9]*([0-9]{7,12})/i);
   if (m) orderNo = m[1].trim();
+
+  // Delivery date
   m = text.match(/Lieferdatum\s+([0-9]{2})\.([0-9]{2})\.([0-9]{4})/i);
   if (m) {
     var mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     deliveryDate = parseInt(m[1]) + '-' + mo[parseInt(m[2]) - 1] + '-' + m[3];
   }
-  m = text.match(/((?:Aldi|Rewe|Lidl|Edeka|Netto|Penny|Kaufland|Norma)[^\x00]*?[0-9]{5}\s+[A-Za-z][A-Za-z\s\(\)\-]*)/i);
-  if (m) deliveryAddress = m[1].replace(/DEUTSCHLAND/gi,'').replace(/GLN[^\s]*/gi,'').replace(/\s+/g,' ').trim().substring(0,200);
-  if (!orderNo && !deliveryDate) { showMsg('msg-upload','Could not extract details. Is this a GB Fine-Food Lieferschein PDF?','err'); return; }
-  order = { orderNo: orderNo, deliveryDate: deliveryDate, deliveryAddress: deliveryAddress };
+
+  // Fix ß splitting
+  var fixedText = text.split('').map(function(c){ return c.charCodeAt(0)===223?'ss':c; }).join('');
+  fixedText = fixedText.replace(/([a-zA-Z]) ss([a-z])/g, '$1ss$2');
+
+  // Delivery address - handle both German (5 digit) and Portuguese (4 digit-3 digit) postcodes
+  // Strip country names at end
+  m = fixedText.match(/((?:Aldi|Rewe|Lidl|Edeka|Netto|Penny|Kaufland|Norma)[^]*?)(?:DEUTSCHLAND|PORTUGAL|GLN:|Lieferschein|Lieferadresse)/i);
+  if (m) {
+    var rawAddr = m[1];
+    rawAddr = rawAddr.replace(/Lieferschein/gi,'').replace(/Seite/gi,'');
+    rawAddr = rawAddr.replace(/\s*\([^)]*\)/g,'');
+    rawAddr = rawAddr.replace(/\s+/g,' ').trim().substring(0,300);
+    deliveryAddress = rawAddr;
+  }
+
+  // SKU - look for article number (Artikel-Nr)
+  m = text.match(/Artikel-Nr\.?\s*[^\n]*?\n\s*([0-9]{5,10})/i);
+  if (!m) m = text.match(/\b([0-9]{7,10})\b/);
+  if (m) skuNo = m[1].trim();
+
+  // Case qty - look for Karton
+  m = text.match(/([0-9]+)\s*Karton/i);
+  if (m) caseQty = m[1].trim();
+
+  // Product name - look for Bio Tempeh or Tempeh
+  m = text.match(/(?:Bio\s+)?Tempeh[^\n\r,]*/i);
+  if (m) productName = m[0].replace(/\s+/g,' ').trim().substring(0,40);
+
+  if (!orderNo && !deliveryDate) {
+    showMsg('msg-upload','Could not extract details. Is this a GB Fine-Food Lieferschein PDF?','err');
+    return;
+  }
+
+  order = { orderNo:orderNo, deliveryDate:deliveryDate, deliveryAddress:deliveryAddress, skuNo:skuNo, caseQty:caseQty, productName:productName };
   document.getElementById('p-order').textContent = orderNo || '-';
   document.getElementById('p-dn').textContent = (orderNo || '') + '_1';
   document.getElementById('p-date').textContent = deliveryDate || '-';
@@ -336,13 +370,13 @@ function buildPDF(order,batch) {
   doc.setLineWidth(0.35); doc.line(14,hY+6,W-14,hY+6);
   var pY=hY+13;
   doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
-  doc.text('1034860',14,pY);
-  doc.text('Bio Tempeh, 200g sortert x12',35,pY);
-  doc.text('120',140,pY); doc.text(batch.lot,157,pY); doc.text(fmtDate(batch.expiry),176,pY);
+  doc.text(order.skuNo||'1034860',14,pY);
+  doc.text(order.productName||'Bio Tempeh, 200g sortert x12',35,pY);
+  doc.text(order.caseQty||'120',140,pY); doc.text(batch.lot,157,pY); doc.text(fmtDate(batch.expiry),176,pY);
   var tY=pY+11;
   doc.setDrawColor(180,180,180); doc.setLineWidth(0.25); doc.line(14,tY-3,W-14,tY-3);
   doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(20,20,20);
-  doc.text('Total',14,tY); doc.text('120',140,tY); doc.line(14,tY+4,W-14,tY+4);
+  doc.text('Total',14,tY); doc.text(order.caseQty||'120',140,tY); doc.line(14,tY+4,W-14,tY+4);
   doc.setFontSize(7); doc.setTextColor(80,80,80);
   doc.text('Note: Product SBR010010 "Better Nature Bio Tempeh 10x200G" is classified as BIO (NL-BIO-01). Please consider this if present in the delivery note.',14,tY+13);
   doc.setFontSize(8);
@@ -357,19 +391,7 @@ function checkPwd() {
   var pwd = document.getElementById('pwd-input').value;
   if (pwd === 'BN@Deliver24!') {
     document.getElementById('password-screen').style.display = 'none';
-    function emailTobias() {
-  var orderNo = order ? (order.orderNo || '') : '';
-  var deliveryDate = order ? (order.deliveryDate || '') : '';
-  var deliveryAddress = order ? (order.deliveryAddress || '') : '';
-  var subject = encodeURIComponent('Delivery Note ' + orderNo + ' - ' + deliveryDate);
-  var body = encodeURIComponent(
-    'Dear Tobias,\n\nPlease find attached the delivery note for order ' + orderNo + '.\n\nDelivery Date: ' + deliveryDate + '\nDelivery Address: ' + deliveryAddress + '\n\nPlease do not hesitate to contact us if you have any questions.\n\nKind regards'
-  );
-  var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&to=wolf%40bk-wolf.de&su=' + subject + '&body=' + body;
-  window.open(gmailUrl, '_blank');
-}
-
-loadStored();
+    loadStored();
   } else {
     document.getElementById('pwd-error').textContent = 'Incorrect password. Please try again.';
     document.getElementById('pwd-input').value = '';
