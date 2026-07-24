@@ -125,9 +125,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="card">
     <div class="card-header"><span class="step">3</span><span class="card-title">Generate delivery note</span></div>
-    <div class="field" style="margin-bottom:14px">
-      <label>Select batch</label>
-      <select id="in-batch"><option value="">- choose a saved batch -</option></select>
+    <div class="grid2" style="margin-bottom:12px">
+      <div class="field">
+        <label>Country / Order type</label>
+        <select id="in-country">
+          <option value="germany">Germany - 1034860 Bio Tempeh, 200g sortert x12</option>
+          <option value="portugal">Portugal - 21069098 Tempeh BIO 200g</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Select batch</label>
+        <select id="in-batch"><option value="">- choose a saved batch -</option></select>
+      </div>
     </div>
     <button class="btn btn-primary btn-full" id="gen-btn" onclick="generatePDF()">&#8595; Generate &amp; download delivery note PDF</button>
     <div id="msg-gen"></div>
@@ -208,18 +217,15 @@ function parseOrderText(text) {
     deliveryAddress = rawAddr;
   }
 
-  // SKU - look for article number (Artikel-Nr)
-  m = text.match(/Artikel-Nr\.?\s*[^\n]*?\n\s*([0-9]{5,10})/i);
-  if (!m) m = text.match(/\b([0-9]{7,10})\b/);
-  if (m) skuNo = m[1].trim();
+  // SKU handled by country dropdown in Step 3
+  skuNo = '1034860';
 
   // Case qty - look for Karton
   m = text.match(/([0-9]+)\s*Karton/i);
   if (m) caseQty = m[1].trim();
 
-  // Product name - look for Bio Tempeh or Tempeh
-  m = text.match(/(?:Bio\s+)?Tempeh[^\n\r,]*/i);
-  if (m) productName = m[0].replace(/\s+/g,' ').trim().substring(0,40);
+  // Product name handled by country dropdown in Step 3
+  productName = 'Bio Tempeh, 200g sortert x12';
 
   if (!orderNo && !deliveryDate) {
     showMsg('msg-upload','Could not extract details. Is this a GB Fine-Food Lieferschein PDF?','err');
@@ -370,15 +376,20 @@ function buildPDF(order,batch) {
   doc.setLineWidth(0.35); doc.line(14,hY+6,W-14,hY+6);
   var pY=hY+13;
   doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
-  doc.text(order.skuNo||'1034860',14,pY);
-  doc.text(order.productName||'Bio Tempeh, 200g sortert x12',35,pY);
+  var country = document.getElementById('in-country').value;
+  var skuDisplay = country === 'portugal' ? '21069098' : (order.skuNo||'1034860');
+  var prodDisplay = 'Bio Tempeh, 200g sortert x12';
+  doc.text(skuDisplay,14,pY);
+  doc.text(prodDisplay,35,pY);
   doc.text(order.caseQty||'120',140,pY); doc.text(batch.lot,157,pY); doc.text(fmtDate(batch.expiry),176,pY);
   var tY=pY+11;
   doc.setDrawColor(180,180,180); doc.setLineWidth(0.25); doc.line(14,tY-3,W-14,tY-3);
   doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(20,20,20);
   doc.text('Total',14,tY); doc.text(order.caseQty||'120',140,tY); doc.line(14,tY+4,W-14,tY+4);
   doc.setFontSize(7); doc.setTextColor(80,80,80);
-  doc.text('Note: Product SBR010010 "Better Nature Bio Tempeh 10x200G" is classified as BIO (NL-BIO-01). Please consider this if present in the delivery note.',14,tY+13);
+  if (country !== 'portugal') {
+    doc.text('Note: Product SBR010010 "Better Nature Bio Tempeh 10x200G" is classified as BIO (NL-BIO-01). Please consider this if present in the delivery note.',14,tY+13);
+  }
   doc.setFontSize(8);
   doc.text('Despatch Operator',14,H-38); doc.text('Truck Temp Set Point',14,H-32);
   doc.text('Condition of the Truck',14,H-26);
